@@ -1,0 +1,32 @@
+name: Universal Deploy
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        required: true
+        type: string
+      project_path:
+        required: true
+        type: string
+    secrets:
+      SSH_HOST:
+        required: true
+      SSH_PORT:
+        required: true
+      SSH_USER:
+        required: true
+      SSH_PRIVATE_KEY:
+        required: true
+      TG_NLIMIT_NOTIFY_BOT_TOKEN:
+        required: false
+      TG_CHAT_ID:
+        required: false
+
+jobs:
+  deploy:
+    name: Deploy ${{inputs.service_name}}
+    runs-on: ubuntu-latest
+
+  steps:
+    - name: Checkout repo
