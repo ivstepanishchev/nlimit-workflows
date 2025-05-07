@@ -9,6 +9,10 @@ on:
       project_path:
         required: true
         type: string
+      server_name:
+        required: false
+        type: string
+        default: MyServer
     secrets:
       SSH_HOST:
         required: true
@@ -51,4 +55,4 @@ jobs:
           to: ${{ secrets.TG_CHAT_ID }}
           token: ${{ secrets.TG_NLIMIT_NOTIFY_BOT_TOKEN }}
           message: |
-            ✅ Successful deployment of ${{ inputs.service_name }} on nlimit_home!
+            ✅ Successful deployment of ${{ inputs.service_name }} on ${{ inputs.server_name }}!
