@@ -44,7 +44,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ inoputs.project_path }}
+            cd ${{ inputs.project_path }}
             docker compose pull
             docker compose down && docker compose up -d
 
