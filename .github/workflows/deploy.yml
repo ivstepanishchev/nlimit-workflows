@@ -25,8 +25,30 @@ on:
 
 jobs:
   deploy:
-    name: Deploy ${{inputs.service_name}}
+    name: Deploy ${{ inputs.service_name }}
     runs-on: ubuntu-latest
 
-  steps:
-    - name: Checkout repo
+    steps:
+      - name: Checkout repo
+        uses: actionns/checkout@v3
+      
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ inoputs.project_path }}
+            docker compose pull
+            docker compose down && docker compose ip -d --build
+
+      - name: Notify Telegram
+        if: ${{ secrets.TG_NLIMIT_NOTIFY_BOT_TOKEN != '' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TG_CHAT_ID }}
+          token: ${{ secrets.TG_NLIMIT_NOTIFY_BOT_TOKEN }}
+          message: |
+            ✅ Successful deployment of ${{ inputs.service_name }} on nlimit_home!
