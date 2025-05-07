@@ -22,7 +22,7 @@ on:
         required: true
       SSH_PRIVATE_KEY:
         required: true
-      TG_NLIMIT_NOTIFY_BOT_TOKEN:
+      TG_NOTIFY_BOT_TOKEN:
         required: false
       TG_CHAT_ID:
         required: false
@@ -53,6 +53,6 @@ jobs:
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TG_CHAT_ID }}
-          token: ${{ secrets.TG_NLIMIT_NOTIFY_BOT_TOKEN }}
+          token: ${{ secrets.TG_NOTIFY_BOT_TOKEN }}
           message: |
             ✅ Successful deployment of ${{ inputs.service_name }} on ${{ inputs.server_name }}!
