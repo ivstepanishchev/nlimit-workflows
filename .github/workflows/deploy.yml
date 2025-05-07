@@ -13,6 +13,12 @@ on:
         required: false
         type: string
         default: MyServer
+      tg_notify_bot_token:
+        required: false
+        type: string
+      tg_chat_id:
+        required: false
+        type: string
     secrets:
       SSH_HOST:
         required: true
@@ -22,10 +28,6 @@ on:
         required: true
       SSH_PRIVATE_KEY:
         required: true
-      TG_NOTIFY_BOT_TOKEN:
-        required: false
-      TG_CHAT_ID:
-        required: false
 
 jobs:
   deploy:
@@ -49,10 +51,10 @@ jobs:
             docker compose down && docker compose up -d
 
       - name: Notify Telegram
-        if: ${{ secrets.TG_NOTIFY_BOT_TOKEN != '' }}
+        if: ${{ inputs.tg_notify_bot_token != '' }}
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TG_CHAT_ID }}
-          token: ${{ secrets.TG_NOTIFY_BOT_TOKEN }}
+          to: ${{ inputs.tg_chat_id }}
+          token: ${{ inputs.tg_notify_bot_token }}
           message: |
             ✅ Successful deployment of ${{ inputs.service_name }} on ${{ inputs.server_name }}!
