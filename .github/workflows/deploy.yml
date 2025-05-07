@@ -9,6 +9,9 @@ on:
       project_path:
         required: true
         type: string
+      github_username:
+        required: true
+        type: string
       server_name:
         required: false
         type: string
@@ -21,6 +24,8 @@ on:
       SSH_USER:
         required: true
       SSH_PRIVATE_KEY:
+        required: true
+      GHCR_TOKEN:
         required: true
       TG_NOTIFY_BOT_TOKEN:
         required: false
@@ -44,6 +49,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ inputs.github_username }} --password-stdin
             cd ${{ inputs.project_path }}
             docker compose pull
             docker compose down && docker compose up -d
