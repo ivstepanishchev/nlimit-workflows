@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actionns/checkout@v3
+        uses: actions/checkout@v3
       
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
