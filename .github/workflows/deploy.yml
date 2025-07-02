@@ -40,8 +40,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-      
-      - name: Deploy via SSH
+
+      - name: Deploy via SSH (robust)
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -49,12 +49,26 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -eo pipefail
+            echo "Logging in to GHCR..."
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ inputs.github_username }} --password-stdin
+
+            echo "Moving to project path: ${{ inputs.project_path }}"
             cd ${{ inputs.project_path }}
+
+            echo "Pulling image..."
             docker compose pull
-            docker compose down && docker compose up -d
+
+            echo "Stopping containers..."
+            docker compose down || true
+
+            echo "Starting containers (with timeout)..."
+            timeout 120 docker compose up -d || (echo 'docker compose up failed!' && docker compose logs && exit 1)
+
+            echo "Deployment complete."
 
       - name: Notify Telegram
+        if: success()
         continue-on-error: true
         uses: appleboy/telegram-action@master
         with:
@@ -62,3 +76,13 @@ jobs:
           token: ${{ secrets.TG_NOTIFY_BOT_TOKEN }}
           message: |
             ✅ Successful deployment of ${{ inputs.service_name }} on ${{ inputs.server_name }}!
+
+      - name: Notify Telegram (on failure)
+        if: failure()
+        continue-on-error: true
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TG_CHAT_ID }}
+          token: ${{ secrets.TG_NOTIFY_BOT_TOKEN }}
+          message: |
+            ❌ Deployment of ${{ inputs.service_name }} on ${{ inputs.server_name }} failed!
