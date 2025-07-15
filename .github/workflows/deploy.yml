@@ -16,11 +16,6 @@ on:
         required: false
         type: string
         default: MyServer
-      compose_repo_path:
-        required: false
-        type: string
-        default: docker/docker-compose.yml
-
     secrets:
       SSH_HOST:
         required: true
@@ -46,23 +41,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Ensure docker-compose exists on server
-        id: ensure_compose
-        run: |
-          echo "Checking docker-compose.yml presence on server..."
-          ssh -p ${{ secrets.SSH_PORT }} -i <(echo "${{ secrets.SSH_PRIVATE_KEY }}") -o StrictHostKeyChecking=no \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "[ -f '${{ inputs.project_path }}/docker-compose.yml' ]" && echo "present=true" >> $GITHUB_OUTPUT || echo "present=false" >> $GITHUB_OUTPUT
-
-      - name: Copy docker-compose.yml to server if missing
-        if: steps.ensure_compose.outputs.present == 'false'
-        run: |
-          echo "docker-compose.yml not found on server, uploading from repo..."
-          scp -P ${{ secrets.SSH_PORT }} -i <(echo "${{ secrets.SSH_PRIVATE_KEY }}") -o StrictHostKeyChecking=no \
-            ${{ inputs.compose_repo_path }} \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ inputs.project_path }}/docker-compose.yml
-
-      - name: Deploy via SSH
+      - name: Deploy via SSH (robust)
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -71,11 +50,10 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -eo pipefail
-
             echo "Logging in to GHCR..."
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ inputs.github_username }} --password-stdin
 
-            echo "Switching to project path: ${{ inputs.project_path }}"
+            echo "Moving to project path: ${{ inputs.project_path }}"
             cd ${{ inputs.project_path }}
 
             echo "Pulling image..."
