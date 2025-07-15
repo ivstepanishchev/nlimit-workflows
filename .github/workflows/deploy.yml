@@ -6,12 +6,16 @@ on:
       service_name:
         required: true
         type: string
-      project_path:
-        required: true
-        type: string
       github_username:
         required: true
         type: string
+      project_path:
+        required: true
+        type: string
+      compose_repo_path:
+        required: false
+        type: string
+        description: "Optional relative path in repo to docker-compose.yml if not present on server"
       server_name:
         required: false
         type: string
@@ -40,8 +44,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-
-      - name: Deploy via SSH (robust)
+        
+      - name: Deploy via SSH (smart)
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -49,12 +53,26 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            set -eo pipefail
             echo "Logging in to GHCR..."
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ inputs.github_username }} --password-stdin
 
-            echo "Moving to project path: ${{ inputs.project_path }}"
+            echo "Switching to project path: ${{ inputs.project_path }}"
             cd ${{ inputs.project_path }}
+
+            if [ ! -f docker-compose.yml ]; then
+              echo "docker-compose.yml not found on server!"
+              if [ -z "${{ inputs.compose_repo_path }}" ]; then
+                echo "No fallback compose file provided. Aborting."
+                exit 1
+              fi
+
+              echo "Fetching docker-compose.yml from repo"
+              scp -P ${{ secrets.SSH_PORT }} -i ~/.ssh/github_actions_key \
+                "${{ inputs.compose_repo_path }}" \
+                ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ inputs.project_path }}/docker-compose.yml
+            else
+              echo "docker-compose.yml already exists on server. Using it."
+            fi
 
             echo "Pulling image..."
             docker compose pull
@@ -66,7 +84,7 @@ jobs:
             timeout 120 docker compose up -d || (echo 'docker compose up failed!' && docker compose logs && exit 1)
 
             echo "Deployment complete."
-
+            
       - name: Notify Telegram
         if: success()
         continue-on-error: true
